@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#F5363F</color>
+    <color name="colorPrimaryDark">#C62B33</color>
+    <color name="colorAccent">#F61051</color>
+    <color name="colorTextPrimary">#212121</color>
+    <color name="colorTextSecondary">#757575</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorWhiteSecondary">#FAFAFA</color>
+    <color name="colorBlack">#000000</color>
+    <color name="ThumbnailTransparentEffect">#33AAAAAA</color>
+</resources>

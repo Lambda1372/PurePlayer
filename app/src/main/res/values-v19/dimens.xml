@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="view_status_bar_control">24dp</dimen>
+    <dimen name="margin_top_sliding_view_icons">40dp</dimen>
+</resources>

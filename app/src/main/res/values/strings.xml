@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Pure Player</string>
+
+    <!--SplashActivity-->
+    <string name="koobak_team">Koobak Software Development Team</string>
+
+    <!--MainActivity-->
+    <string name="artist">Artist</string>
+    <string name="album">Album</string>
+    <string name="songs">Songs</string>
+    <string name="playlist">Playlist</string>
+
+    <!--Public-->
+    <string name="public_permission_fail_message">Permissions is necessary</string>
+    <string name="public_error_player">An error has occurred</string>
+
+
+</resources>

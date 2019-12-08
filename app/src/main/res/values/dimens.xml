@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="title">16sp</dimen>
+    <dimen name="explain">14sp</dimen>
+    <dimen name="koobak_team_splash">8sp</dimen>
+    <dimen name="view_status_bar_control">0dp</dimen>
+    <dimen name="margin_top_sliding_view_icons">16dp</dimen>
+    <dimen name="text_tiny">10sp</dimen>
+    <dimen name="app_name">20sp</dimen>
+</resources>
