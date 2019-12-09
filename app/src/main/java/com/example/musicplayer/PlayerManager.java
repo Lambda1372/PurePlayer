@@ -7,7 +7,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.util.Log;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -105,7 +104,7 @@ class PlayerManager implements SensorEventListener,  AudioManager.OnAudioFocusCh
     }
 
 
-    void setPlayerType(String state) {
+    private void setPlayerType(String state) {
         if (state.equals("Ear")) {
             mPlayer.setAudioStreamType(C.STREAM_TYPE_VOICE_CALL);
         } else {
@@ -180,7 +179,6 @@ class PlayerManager implements SensorEventListener,  AudioManager.OnAudioFocusCh
     // control Play and Pause incoming or outgoing call
     @Override
     public void onAudioFocusChange(int focusChange) {
-        Log.d("here", focusChange+"");
         if (focusChange <= 0) {
             //LOSS -> PAUSE
             if (listener!=null) {
