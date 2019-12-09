@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity{
     private MediaSessionCompat mMediaSessionCompat;
     private Bitmap mThumbnailBitmap;
     private String mPlayAndPauseState = "Pause";
+    private String mNotificationState = "Off";
     private String mRepeatState = "Off";
     private String mShuffleState = "Off";
     private TabLayout tab_layout;
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity{
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         }
-        
+
         setContentView(R.layout.activity_main);
         findView();
         setOthers();
@@ -156,28 +157,32 @@ public class MainActivity extends AppCompatActivity{
         NotificationBroadCastReceiver.setNotifyPlayAndPauseChange(new NotificationBroadCastReceiver.NotifyPlayAndPauseChange() {
             @Override
             public void notifyChange(String state) {
-                if (state.equals("PlayAndPause")) {
-                    if (mPlayAndPauseState.equals("Play")) {
-                        pauseMedia();
-                    } else {
-                        playMedia();
-                    }
-                }
-                else if (state.equals("Previous")) {
-                    previousMedia();
-                }
-                else if (state.equals("Next")) {
-                    nextMedia();
-                }
-                else {
-                    PlayerManager.getSharedInstance(MainActivity.this).pausePlayer();
-                    if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED) {
-                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
-                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
-                    }
-                    else if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.COLLAPSED){
-                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
-                    }
+                switch (state) {
+                    case "PlayAndPause":
+                        if (mPlayAndPauseState.equals("Play")) {
+                            pauseMedia();
+                        } else {
+                            if (mNotificationState.equals("On")) {
+                                playMedia();
+                            }
+                        }
+                        break;
+                    case "Previous":
+                        previousMedia();
+                        break;
+                    case "Next":
+                        nextMedia();
+                        break;
+                    default:
+                        PlayerManager.getSharedInstance(MainActivity.this).pausePlayer();
+                        if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED) {
+                            slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+                            slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                        } else if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.COLLAPSED) {
+                            slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                        }
+                        mNotificationState = "Off";
+                        break;
                 }
 
             }
@@ -325,7 +330,10 @@ public class MainActivity extends AppCompatActivity{
 
                 @Override
                 public void onPlayPlayer() {
-                    playMedia();
+                    if (mNotificationState.equals("On")) {
+                        playMedia();
+                    }
+
                 }
 
                 @Override
@@ -398,6 +406,7 @@ public class MainActivity extends AppCompatActivity{
 
 
     private void setNotification() {
+        mNotificationState = "On";
         mNotificationManagerCompat = NotificationManagerCompat.from(MainActivity.this);
         mMediaSessionCompat = new MediaSessionCompat(MainActivity.this, "Music Player");
         notifyNotification(R.drawable.exo_icon_pause, "play", false, true);
