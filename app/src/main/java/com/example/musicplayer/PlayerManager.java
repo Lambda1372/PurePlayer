@@ -1,7 +1,14 @@
 package com.example.musicplayer;
 
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.media.AudioManager;
 import android.net.Uri;
+import android.util.Log;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Player;
@@ -18,7 +25,7 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
-class PlayerManager {
+class PlayerManager implements SensorEventListener,  AudioManager.OnAudioFocusChangeListener  {
 
     private static PlayerManager mInstance = null;
     private static SimpleExoPlayer mPlayer;
@@ -26,19 +33,24 @@ class PlayerManager {
     private DefaultDataSourceFactory dataSourceFactory;
     private String uriString = "";
     private PlayerCallBack listener;
+    private SensorManager mSensorManager;
+    private Sensor mProximity;
+    private Context mContext;
+    private AudioManager mAudioManager;
 
-    private PlayerManager(Context mContext) {
 
+    private PlayerManager(Context context) {
+        mContext = context;
         DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
         TrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
         TrackSelector trackSelector = new DefaultTrackSelector(trackSelection);
-        mPlayer = ExoPlayerFactory.newSimpleInstance(mContext, trackSelector);
-        mPlayerView = new PlayerView(mContext);
+        mPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
+        mPlayerView = new PlayerView(context);
         mPlayerView.setUseController(true);
         mPlayerView.requestFocus();
         mPlayerView.setPlayer(mPlayer);
         Uri uri = Uri.parse(uriString);
-        dataSourceFactory = new DefaultDataSourceFactory(mContext, Util.getUserAgent(mContext, mContext.getString(R.string.app_name)), BANDWIDTH_METER);
+        dataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, context.getString(R.string.app_name)), BANDWIDTH_METER);
         MediaSource src = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
         mPlayer.prepare(src);
         mPlayer.addListener(new Player.EventListener() {
@@ -64,6 +76,8 @@ class PlayerManager {
                 }
             }
         });
+        setSensor();
+        setAudioManager();
     }
 
 
@@ -73,6 +87,23 @@ class PlayerManager {
         }
         return mInstance;
     }
+
+
+    private void setSensor() {
+        mSensorManager = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
+        if (mSensorManager != null) {
+            mProximity = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        }
+        mSensorManager.registerListener(this, mProximity, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void setAudioManager() {
+        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        if (mAudioManager != null) {
+            mAudioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        }
+    }
+
 
     void setPlayerType(String state) {
         if (state.equals("Ear")) {
@@ -117,12 +148,51 @@ class PlayerManager {
         }
     }
 
-    void releasePlayer() {
-        if (mPlayer != null) {
-            mPlayer.release();
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        // Play audio from earpiece with using Sensor PROXIMITY
+        if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
+            if (event.values[0] < mProximity.getMaximumRange()) {
+                //near
+                if (mAudioManager != null) {
+                    PlayerManager.getSharedInstance(mContext).setPlayerType("Ear");
+                    mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+                    mAudioManager.setSpeakerphoneOn(false);
+                }
+
+            } else {
+                //far
+                if (mAudioManager != null) {
+                    PlayerManager.getSharedInstance(mContext).setPlayerType("Speaker");
+                    mAudioManager.setMode(AudioManager.MODE_NORMAL);
+                    mAudioManager.setSpeakerphoneOn(true);
+                }
+
+            }
         }
     }
 
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    // control Play and Pause incoming or outgoing call
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+        Log.d("here", focusChange+"");
+        if (focusChange <= 0) {
+            //LOSS -> PAUSE
+            if (listener!=null) {
+                listener.onPausePlayer();
+            }
+        } else {
+            //GAIN -> PLAY
+            if (listener!=null) {
+                listener.onPlayPlayer();
+            }
+        }
+    }
     interface PlayerCallBack {
         void onPlayPlayer();
 

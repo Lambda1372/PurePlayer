@@ -3,18 +3,12 @@ package com.example.musicplayer;
 import android.Manifest;
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
@@ -22,12 +16,12 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,6 +35,7 @@ import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
@@ -48,6 +43,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.material.tabs.TabLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -59,7 +55,7 @@ import java.util.Random;
  * Play audio from earpiece with using  Sensor PROXIMITY
  */
 
-public class MainActivity extends AppCompatActivity implements AudioManager.OnAudioFocusChangeListener, SensorEventListener {
+public class MainActivity extends AppCompatActivity{
     private static final int REQUEST_PERMISSIONS = 101;
     private static int[] mTitleTabLayout = {R.string.songs, R.string.artist, R.string.album, R.string.playlist};
     private DisplayMetrics mDisplayMetrics;
@@ -90,11 +86,9 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
     private String mPlayAndPauseState = "Pause";
     private String mRepeatState = "Off";
     private String mShuffleState = "Off";
-    private AudioManager mAudioManager;
     private TabLayout tab_layout;
     private ViewPager view_pager;
-    private SensorManager mSensorManager;
-    private Sensor mProximity;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,19 +98,15 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         }
-
-
-
+        
         setContentView(R.layout.activity_main);
         findView();
         setOthers();
-        setSensor();
         setAdapters();
         setInterfaces();
         setSlideListener();
         setClickListeners();
         setTabLayout();
-        setAudioManager();
 
     }
 
@@ -147,13 +137,6 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
         mDisplayMetrics = getResources().getDisplayMetrics();
     }
 
-    private void setSensor() {
-        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (mSensorManager != null) {
-            mProximity = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
-        }
-    }
-
     private void setAdapters() {
         rv_list_music.setLayoutManager(new LinearLayoutManager(MainActivity.this, RecyclerView.VERTICAL, false));
         checkPermission();
@@ -170,46 +153,33 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
         });
 
         // when play and pause button selected this part is called
-        NotificationBroadCastReceiverPlayPause.setNotifyPlayAndPauseChange(new NotificationBroadCastReceiverPlayPause.NotifyPlayAndPauseChange() {
+        NotificationBroadCastReceiver.setNotifyPlayAndPauseChange(new NotificationBroadCastReceiver.NotifyPlayAndPauseChange() {
             @Override
-            public void notifyChange() {
-
-                if (mPlayAndPauseState.equals("Play")) {
-                    pauseMedia();
-                } else {
-                    playMedia();
+            public void notifyChange(String state) {
+                if (state.equals("PlayAndPause")) {
+                    if (mPlayAndPauseState.equals("Play")) {
+                        pauseMedia();
+                    } else {
+                        playMedia();
+                    }
                 }
-            }
-        });
-
-        // when next button selected this part is called
-        NotificationBroadCastReceiverNext.setNotifyNextChange(new NotificationBroadCastReceiverNext.NotifyNextChange() {
-            @Override
-            public void notifyChange() {
-                nextMedia();
-            }
-        });
-
-        // when Previous button selected this part is called
-        NotificationBroadCastReceiverPrevious.setNotifyPrevoiusChange(new NotificationBroadCastReceiverPrevious.NotifyPreviousChange() {
-            @Override
-            public void notifyChange() {
-                previousMedia();
-            }
-        });
-
-        // when notification was cleared this part is called
-        NotificationClearBroadCastReceiver.setNotifyPlayAndPauseChange(new NotificationClearBroadCastReceiver.NotifyPlayAndPauseChange() {
-            @Override
-            public void notifyChange() {
-                PlayerManager.getSharedInstance(MainActivity.this).pausePlayer();
-                if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED) {
-                    slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
-                    slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                else if (state.equals("Previous")) {
+                    previousMedia();
                 }
-                else if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.COLLAPSED){
-                    slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                else if (state.equals("Next")) {
+                    nextMedia();
                 }
+                else {
+                    PlayerManager.getSharedInstance(MainActivity.this).pausePlayer();
+                    if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED) {
+                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                    }
+                    else if (slide_up_panel.getPanelState() == SlidingUpPanelLayout.PanelState.COLLAPSED){
+                        slide_up_panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+                    }
+                }
+
             }
         });
     }
@@ -438,16 +408,22 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
         Intent thisActivityIntent = new Intent(MainActivity.this, MainActivity.class);
         PendingIntent thisActivityPendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, thisActivityIntent, 0);
 
-        Intent broadcastIntentPlayPause= new Intent(MainActivity.this, NotificationBroadCastReceiverPlayPause.class);
+        Intent broadcastIntentPlayPause = new Intent(MainActivity.this, NotificationBroadCastReceiver.class);
+        broadcastIntentPlayPause.setAction("PlayAndPause");
+
+        Intent broadcastIntentPlayPrevious = new Intent(MainActivity.this, NotificationBroadCastReceiver.class);
+        broadcastIntentPlayPrevious.setAction("Previous");
+
+        Intent broadcastIntentPlayNext = new Intent(MainActivity.this, NotificationBroadCastReceiver.class);
+        broadcastIntentPlayNext.setAction("Next");
+
         PendingIntent broadcastPendingIntentPlayPause = PendingIntent.getBroadcast(MainActivity.this, 0, broadcastIntentPlayPause, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent broadcastPendingIntentPrevious = PendingIntent.getBroadcast(MainActivity.this, 1, broadcastIntentPlayPrevious, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent broadcastPendingIntentNext = PendingIntent.getBroadcast(MainActivity.this, 2, broadcastIntentPlayNext, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Intent broadcastIntentPrevious= new Intent(MainActivity.this, NotificationBroadCastReceiverPrevious.class);
-        PendingIntent broadcastPendingIntentPrevious = PendingIntent.getBroadcast(MainActivity.this, 0, broadcastIntentPrevious, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Intent broadcastIntentNext= new Intent(MainActivity.this, NotificationBroadCastReceiverNext.class);
-        PendingIntent broadcastPendingIntentNext = PendingIntent.getBroadcast(MainActivity.this, 0, broadcastIntentNext, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Intent broadcastClearIntent = new Intent(MainActivity.this, NotificationClearBroadCastReceiver.class);
+        Intent broadcastClearIntent = new Intent(MainActivity.this, NotificationBroadCastReceiver.class);
+        broadcastClearIntent.setAction("Clear");
         PendingIntent broadcastClearPendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, broadcastClearIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 
@@ -471,13 +447,6 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
                 .setOngoing(onGoing)
                 .build();
         mNotificationManagerCompat.notify(10, notification);
-    }
-
-    private void setAudioManager() {
-        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (mAudioManager != null) {
-            mAudioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-        }
     }
 
     private void playMedia() {
@@ -548,69 +517,6 @@ public class MainActivity extends AppCompatActivity implements AudioManager.OnAu
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mProximity, SensorManager.SENSOR_DELAY_NORMAL);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        PlayerManager.getSharedInstance(MainActivity.this).pausePlayer();
-        PlayerManager.getSharedInstance(MainActivity.this).releasePlayer();
-        PlayerManager.getSharedInstance(MainActivity.this).getPlayerView().setPlayer(null);
-        mAudioManager.abandonAudioFocus(this);
-        mSensorManager.unregisterListener(this);
-    }
-
-    // control Play and Pause incoming or outgoing call
-    @Override
-    public void onAudioFocusChange(int focusChange) {
-        Log.d("here", focusChange+"");
-        if (focusChange <= 0) {
-            //LOSS -> PAUSE
-            pauseMedia();
-        } else {
-            //GAIN -> PLAY
-            playMedia();
-        }
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        // Play audio from earpiece with using Sensor PROXIMITY
-        if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-            if (event.values[0] < mProximity.getMaximumRange()) {
-                //near
-                if (mAudioManager != null) {
-                    PlayerManager.getSharedInstance(MainActivity.this).setPlayerType("Ear");
-                    mAudioManager.setMode(AudioManager.MODE_IN_CALL);
-                    mAudioManager.setSpeakerphoneOn(false);
-                }
-
-            } else {
-                //far
-                if (mAudioManager != null) {
-                    PlayerManager.getSharedInstance(MainActivity.this).setPlayerType("Speaker");
-                    mAudioManager.setMode(AudioManager.MODE_NORMAL);
-                    mAudioManager.setSpeakerphoneOn(true);
-                }
-
-            }
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-
     }
 
     //these fragment are using for ViewPager in 4 tab (TabLayout) 
